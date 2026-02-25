@@ -6,7 +6,6 @@ from cars import create_cars, NUM_CARS
 from pathfinding import (build_congestion_map, compute_all_paths,
                          move_cars_with_paths)
 
-# ── Simulation settings ────────────────────────────────────────────────────────
 MAX_TICKS        = 100   # how long the simulation runs
 REPATH_EVERY     = 5     # recompute paths every N ticks
 RUSH_HOUR_TICKS  = (20, 40)   # extra cars spawn during this tick range
@@ -70,25 +69,19 @@ def run_simulation(grid, cars, max_ticks=MAX_TICKS):
 
     for tick in range(max_ticks):
 
-        # ── 1. Build congestion map ────────────────────────────────────────────
         congestion_map = build_congestion_map(cars, GRID_SIZE)
 
-        # ── 2. Rush hour — inject extra cars ──────────────────────────────────
         if tick == RUSH_HOUR_TICKS[0]:
             cars = spawn_rush_hour_cars(cars, grid)
 
-        # ── 3. Recompute paths periodically ───────────────────────────────────
         if tick % REPATH_EVERY == 0:
             paths = compute_all_paths(cars, grid, congestion_map)
 
-        # ── 4. Move all cars ───────────────────────────────────────────────────
         cars = move_cars_with_paths(cars, paths, grid)
 
-        # ── 5. Log this tick ───────────────────────────────────────────────────
         snapshot = log_snapshot(cars, congestion_map, tick)
         history_frames.append(snapshot)
 
-        # ── 6. Progress report every 10 ticks ─────────────────────────────────
         if tick % 10 == 0 or tick == max_ticks - 1:
             moving  = (cars['status'] == 'moving').sum()
             arrived = (cars['status'] == 'arrived').sum()
@@ -97,12 +90,10 @@ def run_simulation(grid, cars, max_ticks=MAX_TICKS):
                   f"Arrived: {arrived:3d} | "
                   f"Peak congestion: {max_cong:.0f} cars/cell")
 
-        # ── 7. Early exit if all cars have arrived ─────────────────────────────
         if (cars['status'] == 'moving').sum() == 0:
             print(f"\n  All cars arrived by tick {tick}!")
             break
 
-    # ── Combine all snapshots into one big history DataFrame ──────────────────
     print("\nBuilding history DataFrame...")
     history = pd.concat(history_frames, ignore_index=True)
     print(f"History shape: {history.shape} "
@@ -153,8 +144,6 @@ def summarize_simulation(history, cars):
     print(f"  Congestion hotspot: cell {hotspot}")
     print("="*55)
 
-
-# ── Run it ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     grid = create_city()
     cars = create_cars(grid)
