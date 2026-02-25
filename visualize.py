@@ -333,5 +333,3 @@ def run_animation():
     print("Saved to traffic_simulation.gif ✓")
 
 # ── Entry point ────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    run_animation()
