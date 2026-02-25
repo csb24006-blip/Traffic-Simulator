@@ -296,14 +296,41 @@ def run_animation():
 
     plt.show()
 
-    # ── Optionally save as gif ─────────────────────────────────────────────────
+    # ── Optionally save as gif ───────────────────────────────────────────────
+
+    
     save = input("\nSave animation as GIF? (y/n): ").strip().lower()
     if save == 'y':
-        print("Saving... this may take 30–60 seconds...")
-        ani.save('traffic_simulation.gif',
-                 writer='pillow', fps=8, dpi=80)
-        print("Saved to traffic_simulation.gif")
+    print("Saving... this may take 30–60 seconds...")
+    from matplotlib.animation import PillowWriter
 
+    # Reset simulation completely for a clean save pass
+    grid       = create_city()
+    cars       = create_cars(grid)
+    paths      = {}
+    rush_triggered = False
+    rush_car_ids   = set()
+    ticks_log.clear()
+    moving_log.clear()
+    arrived_log.clear()
+    cong_log.clear()
+
+    # Reset chart limits
+    line_moving.set_data([], [])
+    line_arrived.set_data([], [])
+    line_cong.set_data([], [])
+    line_mean.set_data([], [])
+
+    writer = PillowWriter(fps=8)
+    with writer.saving(fig, "traffic_simulation.gif", dpi=80):
+        for frame in range(MAX_TICKS):
+            update(frame)
+            fig.canvas.draw()
+            writer.grab_frame()
+            if frame % 10 == 0:
+                print(f"  Saving frame {frame}/{MAX_TICKS}...")
+
+    print("Saved to traffic_simulation.gif ✓")
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
