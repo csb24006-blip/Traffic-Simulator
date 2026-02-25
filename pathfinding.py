@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 from city import ROAD, BUILDING, HIGHWAY, TRAFFIC_LIGHT
 
-# ── Cell traversal costs ───────────────────────────────────────────────────────
-# Lower cost = more attractive to route through
 BASE_COSTS = {
     ROAD:          1.0,
-    HIGHWAY:       0.5,    # highways are twice as attractive
-    TRAFFIC_LIGHT: 1.5,    # slight penalty for intersections
-    BUILDING:      np.inf, # impassable
+    HIGHWAY:       0.5,    
+    TRAFFIC_LIGHT: 1.5,    
+    BUILDING:      np.inf, 
 }
 
 
@@ -28,15 +26,12 @@ def build_cost_grid(grid, congestion_map):
     size = grid.shape[0]
     cost_grid = np.ones((size, size), dtype=np.float32)
 
-    # Apply base terrain costs
     for cell_type, base_cost in BASE_COSTS.items():
         cost_grid[grid == cell_type] = base_cost
 
-    # Add congestion penalty — each extra car on a cell adds 0.5 cost
     congestion_penalty = congestion_map * 0.5
     cost_grid += congestion_penalty
 
-    # Buildings stay impassable regardless of congestion
     cost_grid[grid == BUILDING] = np.inf
 
     return cost_grid
@@ -54,7 +49,6 @@ def build_congestion_map(cars, grid_size):
     if len(moving_cars) == 0:
         return congestion
 
-    # Use np.add.at to count cars per cell without looping
     xs = moving_cars['x'].astype(int).values
     ys = moving_cars['y'].astype(int).values
     np.add.at(congestion, (ys, xs), 1)
@@ -83,10 +77,9 @@ def dijkstra(cost_grid, start, end):
     prev = np.full((rows, cols, 2), -1, dtype=np.int32)
 
     dist[start] = 0.0
-    # Priority queue: (cost, row, col)
+    
     heap = [(0.0, start[0], start[1])]
 
-    # 4-directional movement (up, down, left, right)
     directions = [(-1,0), (1,0), (0,-1), (0,1)]
 
     while heap:
@@ -96,18 +89,15 @@ def dijkstra(cost_grid, start, end):
             continue
         visited[r, c] = True
 
-        # Reached the destination
         if (r, c) == end:
             break
 
         for dr, dc in directions:
             nr, nc = r + dr, c + dc
 
-            # Skip out-of-bounds
             if not (0 <= nr < rows and 0 <= nc < cols):
                 continue
 
-            # Skip buildings and already visited
             if visited[nr, nc] or cost_grid[nr, nc] == np.inf:
                 continue
 
@@ -117,11 +107,9 @@ def dijkstra(cost_grid, start, end):
                 prev[nr, nc] = [r, c]
                 heapq.heappush(heap, (new_cost, nr, nc))
 
-    # ── Reconstruct path by walking backwards through prev ───────────────────
     path = []
     r, c = end
 
-    # If we never reached the end, return empty path
     if dist[end] == np.inf:
         return path
 
@@ -141,15 +129,11 @@ def get_next_step(path, current_pos):
     return the very next (row, col) step to take.
     """
     if len(path) < 2:
-        return current_pos   # already at destination
-
-    # path[0] should be current position, path[1] is next step
-    # Find where we are in the path and return the next node
+        return current_pos   
     for i, step in enumerate(path):
         if step == current_pos and i + 1 < len(path):
             return path[i + 1]
 
-    # Fallback: just return the second step
     return path[1]
 
 def compute_all_paths(cars, grid, congestion_map):
@@ -202,7 +186,7 @@ def move_cars_with_paths(cars, paths, grid):
     cars['y'] = new_y
     cars.loc[moving, 'ticks_traveled'] += 1
 
-    # ── Update distance and arrival ───────────────────────────────────────────
+    
     cars.loc[moving, 'distance_to_dest'] = (
         (cars.loc[moving, 'dest_x'] - cars.loc[moving, 'x']).abs() +
         (cars.loc[moving, 'dest_y'] - cars.loc[moving, 'y']).abs()
@@ -228,15 +212,14 @@ if __name__ == "__main__":
     paths = compute_all_paths(cars, grid, congestion_map)
     print(f"Paths computed for {len(paths)} cars")
 
-    # Show a sample path for car 0
     if 0 in paths:
         print(f"\nCar 0 path ({len(paths[0])} steps):")
         print(paths[0][:10], "...")   # first 10 steps
 
-    # Run 10 ticks
+   
     for tick in range(1, 11):
         congestion_map = build_congestion_map(cars, grid.shape[0])
-        # Recompute paths every 5 ticks to adapt to congestion changes
+      
         if tick % 5 == 1:
             paths = compute_all_paths(cars, grid, congestion_map)
         cars = move_cars_with_paths(cars, paths, grid)
