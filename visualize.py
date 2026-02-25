@@ -1,5 +1,3 @@
-INTERVAL_MS = 200
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,16 +12,11 @@ from pathfinding import (build_congestion_map, compute_all_paths,
                          move_cars_with_paths)
 
 
-# ── Settings ───────────────────────────────────────────────────────────────────
 MAX_TICKS    = 100
 REPATH_EVERY = 5
 RUSH_HOUR    = 20
 INTERVAL_MS  = 200   # milliseconds between frames — lower = faster animation
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# BUILD STATIC CITY BACKGROUND IMAGE
-# ══════════════════════════════════════════════════════════════════════════════
 
 def build_city_image(grid):
     """
@@ -46,11 +39,6 @@ def build_city_image(grid):
         image[grid == cell_type] = rgb
 
     return image
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SET UP THE FIGURE
-# ══════════════════════════════════════════════════════════════════════════════
 
 def build_figure():
     """
@@ -93,14 +81,9 @@ def build_figure():
 
     return fig, ax_city, ax_cars, ax_cong, ax_info
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# MAIN ANIMATION
-# ══════════════════════════════════════════════════════════════════════════════
-
 def run_animation():
 
-    # ── Init simulation state ──────────────────────────────────────────────────
+    
     grid       = create_city()
     cars       = create_cars(grid)
     city_image = build_city_image(grid)
@@ -114,10 +97,10 @@ def run_animation():
 
     rush_triggered = False
 
-    # ── Build figure ───────────────────────────────────────────────────────────
+   
     fig, ax_city, ax_cars, ax_cong, ax_info = build_figure()
 
-    # ── City map base layer ────────────────────────────────────────────────────
+  
     ax_city.imshow(city_image, interpolation='nearest', zorder=1)
 
     # Congestion overlay — starts as zeros, updates every frame
@@ -163,7 +146,6 @@ def run_animation():
     ax_city.set_xlabel("X", color='white')
     ax_city.set_ylabel("Y", color='white')
 
-    # ── Stats charts ───────────────────────────────────────────────────────────
     line_moving,  = ax_cars.plot([], [], color='#3498db',
                                   linewidth=2, label='Moving')
     line_arrived, = ax_cars.plot([], [], color='#2ecc71',
@@ -199,15 +181,13 @@ def run_animation():
                   edgecolor='#444466', alpha=0.9)
     )
 
-    # ── Track rush hour car IDs ────────────────────────────────────────────────
+    
     rush_car_ids = set()
 
-    # ── Animation update function ─────────────────────────────────────────────
     # This function is called once per frame by FuncAnimation
     def update(tick):
         nonlocal cars, paths, rush_triggered, rush_car_ids
 
-        # ── Rush hour ─────────────────────────────────────────────────────────
         if tick == RUSH_HOUR and not rush_triggered:
             rush_triggered = True
             from cars import create_cars as _create_cars
@@ -217,19 +197,15 @@ def run_animation():
             cars = pd.concat([cars, new_cars], ignore_index=True)
             print(f"  ⚡ Rush hour triggered at tick {tick}")
 
-        # ── Repath ────────────────────────────────────────────────────────────
         if tick % REPATH_EVERY == 0:
             congestion_map = build_congestion_map(cars, GRID_SIZE)
             paths = compute_all_paths(cars, grid, congestion_map)
 
-        # ── Move ──────────────────────────────────────────────────────────────
         congestion_map = build_congestion_map(cars, GRID_SIZE)
         cars = move_cars_with_paths(cars, paths, grid)
 
-        # ── Update congestion overlay ─────────────────────────────────────────
         cong_overlay.set_data(congestion_map)
 
-        # ── Update car scatter plots ───────────────────────────────────────────
         moving_cars  = cars[(cars['status'] == 'moving') &
                             (~cars['car_id'].isin(rush_car_ids))]
         arrived_cars = cars[cars['status'] == 'arrived']
@@ -249,13 +225,11 @@ def run_animation():
             else np.empty((0, 2))
         )
 
-        # ── Log stats ─────────────────────────────────────────────────────────
         ticks_log.append(tick)
         moving_log.append((cars['status'] == 'moving').sum())
         arrived_log.append((cars['status'] == 'arrived').sum())
         cong_log.append(congestion_map.max())
 
-        # ── Update line charts ────────────────────────────────────────────────
         line_moving.set_data(ticks_log, moving_log)
         line_arrived.set_data(ticks_log, arrived_log)
         line_cong.set_data(ticks_log, cong_log)
@@ -263,7 +237,6 @@ def run_animation():
                            [build_congestion_map(cars, GRID_SIZE).mean()
                             for _ in [0]])   # current mean only
 
-        # ── Update info box ───────────────────────────────────────────────────
         moving_n  = (cars['status'] == 'moving').sum()
         arrived_n = (cars['status'] == 'arrived').sum()
         total_n   = cars['car_id'].nunique()
@@ -284,7 +257,7 @@ def run_animation():
                 scat_rush, line_moving, line_arrived,
                 line_cong, line_mean, info_text)
 
-    # ── Run the animation ──────────────────────────────────────────────────────
+
     ani = animation.FuncAnimation(
         fig,
         update,
@@ -296,33 +269,31 @@ def run_animation():
 
     plt.show()
 
-    # ── Optionally save as gif ───────────────────────────────────────────────
-
     
-    save = input("\nSave animation as GIF? (y/n): ").strip().lower()
-    if save == 'y':
-    print("Saving... this may take 30–60 seconds...")
-    from matplotlib.animation import PillowWriter
+  save = input("\nSave animation as GIF? (y/n): ").strip().lower()
+  if save == 'y':
+  print("Saving... this may take 30–60 seconds...")
+  from matplotlib.animation import PillowWriter
 
-    # Reset simulation completely for a clean save pass
-    grid       = create_city()
-    cars       = create_cars(grid)
-    paths      = {}
-    rush_triggered = False
-    rush_car_ids   = set()
-    ticks_log.clear()
-    moving_log.clear()
-    arrived_log.clear()
-    cong_log.clear()
+   
+  grid       = create_city()
+  cars       = create_cars(grid)
+  paths      = {}
+  rush_triggered = False
+  rush_car_ids   = set()
+  ticks_log.clear()
+  moving_log.clear()
+  arrived_log.clear()
+  cong_log.clear()
 
     # Reset chart limits
-    line_moving.set_data([], [])
-    line_arrived.set_data([], [])
-    line_cong.set_data([], [])
-    line_mean.set_data([], [])
+  line_moving.set_data([], [])
+  line_arrived.set_data([], [])
+  line_cong.set_data([], [])
+  line_mean.set_data([], [])
 
-    writer = PillowWriter(fps=8)
-    with writer.saving(fig, "traffic_simulation.gif", dpi=80):
+  writer = PillowWriter(fps=8)
+  with writer.saving(fig, "traffic_simulation.gif", dpi=80):
         for frame in range(MAX_TICKS):
             update(frame)
             fig.canvas.draw()
@@ -330,6 +301,6 @@ def run_animation():
             if frame % 10 == 0:
                 print(f"  Saving frame {frame}/{MAX_TICKS}...")
 
-    print("Saved to traffic_simulation.gif ✓")
+  print("Saved to traffic_simulation.gif ✓")
 
 # ── Entry point ────────────────────────────────────────────────────────────────
