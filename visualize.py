@@ -248,6 +248,8 @@ def run_animation():
             f"  PEAK CONG.  : {peak_cong:.1f} cars/cell\n"
             f"  RUSH HOUR   : {rush_str}"
         )
+        
+        fig.canvas.draw_idle()
 
         return (cong_overlay, scat_moving, scat_arrived,
                 scat_rush, line_moving, line_arrived,
@@ -259,7 +261,7 @@ def run_animation():
         update,
         frames=MAX_TICKS,
         interval=INTERVAL_MS,
-        blit=False,
+        blit=True,
         repeat=False
     )
 
@@ -268,7 +270,7 @@ def run_animation():
     if save == 'y':
         print("Saving... this may take 30–60 seconds...")
         from matplotlib.animation import PillowWriter
-        ani.save("traffic_simulation.gif", writer=PillowWriter(fps=8), dpi=80)
+        ani.save("traffic_simulation.gif", writer=PillowWriter(fps=8), dpi=80,savefig_kwargs={'facecolor': fig.get_facecolor()})
         print("Saved to traffic_simulation.gif ✓")
 
     plt.show()
